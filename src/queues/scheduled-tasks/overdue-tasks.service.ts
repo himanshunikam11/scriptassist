@@ -7,6 +7,9 @@ import { LessThan, Repository } from 'typeorm';
 import { Task } from '../../modules/tasks/entities/task.entity';
 import { TaskStatus } from '../../modules/tasks/enums/task-status.enum';
 
+/**
+ * Service responsible for identifying and queueing overdue tasks for processing.
+ */
 @Injectable()
 export class OverdueTasksService {
   private readonly logger = new Logger(OverdueTasksService.name);
@@ -18,31 +21,46 @@ export class OverdueTasksService {
     private tasksRepository: Repository<Task>,
   ) {}
 
-  // TODO: Implement the overdue tasks checker
-  // This method should run every hour and check for overdue tasks
+  /**
+   * Cron job that runs every hour to check for overdue tasks.
+   * Overdue tasks are those whose due date has passed and are still pending.
+   */
   @Cron(CronExpression.EVERY_HOUR)
   async checkOverdueTasks() {
     this.logger.debug('Checking for overdue tasks...');
     
-    // TODO: Implement overdue tasks checking logic
-    // 1. Find all tasks that are overdue (due date is in the past)
-    // 2. Add them to the task processing queue
-    // 3. Log the number of overdue tasks found
-    
-    // Example implementation (incomplete - to be implemented by candidates)
     const now = new Date();
-    const overdueTasks = await this.tasksRepository.find({
-      where: {
-        dueDate: LessThan(now),
-        status: TaskStatus.PENDING,
-      },
-    });
-    
-    this.logger.log(`Found ${overdueTasks.length} overdue tasks`);
-    
-    // Add tasks to the queue to be processed
-    // TODO: Implement adding tasks to the queue
-    
-    this.logger.debug('Overdue tasks check completed');
+    try {
+      const overdueTasks = await this.tasksRepository.find({
+        where: {
+          dueDate: LessThan(now),
+          status: TaskStatus.PENDING,
+        },
+        select: ['id', 'status']
+      });
+  
+      if (!overdueTasks.length) {
+        this.logger.log('No overdue tasks found');
+        return;
+      }
+      
+      this.logger.log(`Found ${overdueTasks.length} overdue tasks`);
+      
+      // Add tasks to the queue to be processed
+      await Promise.all(
+        overdueTasks.map(task => 
+          this.taskQueue.add('overdue-tasks-notification',
+            {
+              taskId: task.id,
+              status: task.status
+            }
+          )
+        )
+      )
+      
+      this.logger.debug('Overdue tasks check completed');
+    } catch (error: any) {
+      this.logger.error('Error while checking overdue tasks', error.stack);
+    }
   }
 } 

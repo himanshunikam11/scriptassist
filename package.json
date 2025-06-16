@@ -25,7 +25,9 @@
     "migration:show": "npm run typeorm -- migration:show",
     "migration:create": "typeorm migration:create src/database/migrations/Migration",
     "migration:custom": "ts-node src/database/run-migrations.ts",
-    "seed": "ts-node src/database/seeding/seeds.ts"
+    "seed": "ts-node src/database/seeding/seeds.ts",
+    "docs": "typedoc src --entryPointStrategy expand --out docs",
+    "docs:open": "bun run docs && open docs/index.html"
   },
   "dependencies": {
     "@nestjs/bullmq": "10.2.3",
@@ -49,6 +51,7 @@
     "pg": "8.14.1",
     "reflect-metadata": "0.1.14",
     "rxjs": "7.8.2",
+    "typedoc": "0.28.5",
     "typeorm": "0.3.21",
     "uuid": "9.0.1"
   },

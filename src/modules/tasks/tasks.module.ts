@@ -10,7 +10,16 @@ import { Task } from './entities/task.entity';
     TypeOrmModule.forFeature([Task]),
     BullModule.registerQueue({
       name: 'task-processing',
-    }),
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 2000, 
+        },
+        removeOnComplete: true,
+        removeOnFail: false,
+      }  
+    })
   ],
   controllers: [TasksController],
   providers: [TasksService],
